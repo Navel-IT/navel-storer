@@ -1,0 +1,24 @@
+{
+    "name": "navel-storer",
+    "version": "0.1.0",
+    "description": "Store Navel::Event objects and build/maintain relations between them.",
+    "author": "Yoann Le Garff, Nicolas Boquet and Yann Le Bras",
+    "license": "Apache 2",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/navel-it/navel-storer.git"
+    },
+    "keywords": [
+        "navel"
+    ],
+    "engines": {
+        "arangodb": "^3.0.0"
+    },
+    "scripts": {
+        "setup": "scripts/setup.js",
+        "teardown": "scripts/teardown.js"
+    },
+    "main": "index.js",
+    "lib": ".",
+    "tests": "t/**/*.js"
+}
