@@ -11,10 +11,10 @@ const Joi = require('joi');
 
 const Router = require('@arangodb/foxx/router')();
 
-eventInTransportFormatSchema = Joi.array().ordered(
-    Joi.integer().required(),
+const eventInTransportFormatSchema = Joi.array().ordered(
+    Joi.number().integer().required(),
     [
-        Joi.string().required(),
+        Joi.string().allow(null).required(),
         Joi.number().required()
     ],
     [
@@ -22,10 +22,10 @@ eventInTransportFormatSchema = Joi.array().ordered(
         Joi.number().required()
     ],
     [
-        Joi.string(),
-        Joi.number()
+        Joi.string().allow(null).required(),
+        Joi.number().required()
     ],
-    Joi.any().required(),
+    Joi.any().required()
 );
 
 Router.post('/batch', function (req, res) {
@@ -35,13 +35,13 @@ Router.post('/batch', function (req, res) {
         var errors = [];
 
         try {
-            var event = JSON.parse(req.body);
+            const event = JSON.parse(req.body);
 
-            var error = Joi.validate(event, eventInTransportFormatSchema);
+            const validate = Joi.validate(event, eventInTransportFormatSchema);
 
-            if (error) throw error;
+            if (validate.error !== null) throw validate.error;
 
-            // CRUD with dbs, collections, graphs
+            // CRUD with dbs, collections, graphs // event[1] === null in a special collection
         } catch (e) {
             errors.push(e);
         }
@@ -61,7 +61,7 @@ Router.post('/batch', function (req, res) {
     Joi.array().items(
         Joi.object({
             class: [
-                Joi.string().required(),
+                Joi.string().allow(null).required(),
                 Joi.number().required()
             ],
             id: [
