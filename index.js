@@ -13,18 +13,18 @@ const Router = require('@arangodb/foxx/router')();
 
 const eventInTransportFormatSchema = Joi.array().ordered(
     Joi.number().integer().required(),
-    [
-        Joi.string().allow(null).required(),
-        Joi.number().required()
-    ],
-    [
-        Joi.string().required(),
-        Joi.number().required()
-    ],
-    [
-        Joi.string().allow(null).required(),
-        Joi.number().required()
-    ],
+    Joi.alternatives([
+        Joi.string().allow(null),
+        Joi.number()
+    ]).required(),
+    Joi.alternatives([
+        Joi.string(),
+        Joi.number()
+    ]).required(),
+    Joi.alternatives([
+        Joi.string().allow(null),
+        Joi.number()
+    ]).required(),
     Joi.any().required()
 );
 
@@ -34,23 +34,27 @@ Router.post('/batch', function (req, res) {
     for (var i = 0; i < req.body.length; i++) {
         var errors = [];
 
+        var event;
+
         try {
-            const event = JSON.parse(req.body);
+            const validate = Joi.validate(JSON.parse(req.body[i]), eventInTransportFormatSchema);
 
-            const validate = Joi.validate(event, eventInTransportFormatSchema);
+            event = validate.value;
 
-            if (validate.error !== null) throw validate.error;
+            if (validate.error !== null) throw 'validation error';
 
             // CRUD with dbs, collections, graphs // event[1] === null in a special collection
         } catch (e) {
             errors.push(e);
         }
 
-        resBody.push({
-            class: event.class,
-            id: event.id,
-            errors: errors
-        });
+        if (event !== undefined) {
+            resBody.push({
+                class: event[1],
+                id: event[2],
+                errors: errors
+            });
+        }
     }
 
     res.json(resBody);
@@ -60,14 +64,14 @@ Router.post('/batch', function (req, res) {
 ).response(
     Joi.array().items(
         Joi.object({
-            class: [
-                Joi.string().allow(null).required(),
-                Joi.number().required()
-            ],
-            id: [
-                Joi.string().required(),
-                Joi.number().required()
-            ],
+            class: Joi.alternatives([
+                Joi.string().allow(null),
+                Joi.number()
+            ]),
+            id: Joi.alternatives([
+                Joi.string().allow(null),
+                Joi.number()
+            ]),
             errors: Joi.array()
         }).required()
     ).required(),
