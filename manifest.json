@@ -18,7 +18,7 @@
         "setup": "scripts/setup.js",
         "teardown": "scripts/teardown.js"
     },
-    "main": "index.js",
+    "main": "main.js",
     "lib": ".",
     "tests": "t/**/*.js"
 }

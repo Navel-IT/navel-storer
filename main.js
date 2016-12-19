@@ -7,26 +7,10 @@
 
 'use strict;'
 
+const _ = require('lodash');
 const Joi = require('joi');
 
 const Router = require('@arangodb/foxx/router')();
-
-const eventInTransportFormatSchema = Joi.array().ordered(
-    Joi.number().integer().required(),
-    Joi.alternatives([
-        Joi.string().allow(null),
-        Joi.number()
-    ]).required(),
-    Joi.alternatives([
-        Joi.string(),
-        Joi.number()
-    ]).required(),
-    Joi.alternatives([
-        Joi.string().allow(null),
-        Joi.number()
-    ]).required(),
-    Joi.any().required()
-);
 
 Router.post('/batch', function (req, res) {
     var resBody = [];
@@ -37,18 +21,27 @@ Router.post('/batch', function (req, res) {
         var event;
 
         try {
-            const validate = Joi.validate(JSON.parse(req.body[i]), eventInTransportFormatSchema);
+            event = JSON.parse(req.body[i]);
 
-            event = validate.value;
+            if ( ! (
+                event instanceof Array &&
+                event.length == 5 &&
+                _.isInteger(event[0]) &&
+                (_.isNull(event[1]) || _.isString(event[1]) || _.isInteger(event[1])) &&
+                (_.isString(event[2]) || _.isInteger(event[2])) &&
+                (_.isNull(event[1]) || _.isString(event[1]) || _.isInteger(event[1]))
+            )) {
+                event = undefined;
 
-            if (validate.error !== null) throw 'validation error';
+                throw 'invalid event';
+            }
 
             // CRUD with dbs, collections, graphs // event[1] === null in a special collection
         } catch (e) {
             errors.push(e);
         }
 
-        if (event !== undefined) {
+        if ( ! _.isUndefined(event)) {
             resBody.push({
                 class: event[1],
                 id: event[2],
