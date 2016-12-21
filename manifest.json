@@ -18,7 +18,8 @@
         "setup": "scripts/setup.js",
         "teardown": "scripts/teardown.js"
     },
+    "thumbnail": "thumbnail.png",
+    "tests": "t/**/*.js",
     "main": "main.js",
-    "lib": ".",
-    "tests": "t/**/*.js"
+    "lib": "."
 }
