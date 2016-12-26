@@ -7,15 +7,9 @@
 
 'use strict;'
 
-const db = require('@arangodb').db;
-const graphModule = require('@arangodb/general-graph');
+const db = require('@arangodb').db, graphModule = require('@arangodb/general-graph'),
+    graphs = ['main'], documentCollections = ['relation-configuration'], edgeCollections = ['relation'];
 
-const graphs = [
-    'main'
-];
-const documentCollections = [
-    'relations'
-];
 
 for (graphName of graphs) {
     if ( ! graphModule._exists(graphName)) graphModule._create(graphName);
@@ -23,6 +17,10 @@ for (graphName of graphs) {
 
 for (collectionName of documentCollections) {
     if ( ! db._collection(collectionName)) db._createDocumentCollection(collectionName);
+}
+
+for (collectionName of edgeCollections) {
+    if ( ! db._collection(collectionName)) db._createEdgeCollection(collectionName);
 }
 
 // END

@@ -7,16 +7,11 @@
 
 'use strict;'
 
-const _ = require('lodash'),
-    joi = require('joi'),
-    db = require('@arangodb').db,
-    graphModule = require('@arangodb/general-graph'),
-    router = require('@arangodb/foxx/router')();
+const _ = require('lodash'), joi = require('joi'),
+    db = require('@arangodb').db, graphModule = require('@arangodb/general-graph'), router = require('@arangodb/foxx/router')();
 
-router.post('/batch', function (req, res) {
-    var notifications = [],
-        errors = [],
-        events = {};
+router.post('/fill', function (req, res) {
+    var notifications = [], errors = [], events = {};
 
     for (const serializedEvent of req.body) {
         try {
@@ -31,7 +26,7 @@ router.post('/batch', function (req, res) {
                 (_.isNull(event[1]) || _.isString(event[1]) || _.isInteger(event[1]))
             )) throw new Error('invalid event');
 
-            const documentCollectionName = _.isNull(event[1]) || ! _.isObjectLike(event[4]) ? 'void' : 'class_' + event[1];
+            const documentCollectionName = _.isNull(event[1]) || ! _.isObjectLike(event[4]) ? 'void' : 'class-' + event[1];
 
             if ( ! _.has(events, documentCollectionName)) events[documentCollectionName] = [];
 
@@ -55,7 +50,7 @@ router.post('/batch', function (req, res) {
                 var errors = [];
 
                 try {
-                    documentCollection.insert({
+                    const document = documentCollection.insert({
                         time: event[0],
                         id: event[2],
                         description: event[3],
@@ -102,6 +97,11 @@ router.post('/batch', function (req, res) {
     }).required(),
     'List of Navel::Notification constructor properties'
 );
+
+// router.get('/relations', function (req, res) {
+// router.post
+// router.put
+// router.delete
 
 module.context.use(router);
 
