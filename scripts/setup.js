@@ -8,7 +8,7 @@
 'use strict;'
 
 const db = require('@arangodb').db, graphModule = require('@arangodb/general-graph'),
-    graphs = ['main'], documentCollections = ['relation-configuration'], edgeCollections = ['relation'];
+    graphs = ['main'], documentCollections = ['aggregator'], edgeCollections = ['aggregation'];
 
 
 for (graphName of graphs) {

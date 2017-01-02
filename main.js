@@ -26,7 +26,7 @@ router.post('/fill', function (req, res) {
                 (_.isNull(event[1]) || _.isString(event[1]) || _.isInteger(event[1]))
             )) throw new Error('invalid event');
 
-            const documentCollectionName = _.isNull(event[1]) || ! _.isObjectLike(event[4]) ? 'void' : 'class-' + event[1];
+            const documentCollectionName = _.isNull(event[1]) || ! _.isObjectLike(event[4]) ? 'unclassable' : 'class-' + event[1];
 
             if ( ! _.has(events, documentCollectionName)) events[documentCollectionName] = [];
 
@@ -98,10 +98,11 @@ router.post('/fill', function (req, res) {
     'List of Navel::Notification constructor properties'
 );
 
-// router.get('/relations', function (req, res) {
-// router.post
-// router.put
-// router.delete
+// router.get('/aggregators', function (req, res) { });
+// router.post('/aggregators', function (req, res) { });
+// router.get('/aggregators/:aggregator', function (req, res) { });
+// router.put('/aggregators/:aggregator', function (req, res) { });
+// router.delete('/aggregators/:aggregator', function (req, res) { });
 
 module.context.use(router);
 
