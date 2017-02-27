@@ -31,11 +31,6 @@ const _ = require('lodash'),
         from_path: joi.string().allow('').required(),
         to_path: joi.string().allow('').required()
     }).required(),
-    joi_aggregator_optionals = joi_aggregator.optionalKeys(
-        _.map(joi_aggregator._inner.children, function (e) {
-            return e.key;
-        })
-    ),
     joi_ok_ko = joi.object({
         ok: joi.array(
             joi.string().allow('')
@@ -239,7 +234,13 @@ router.put('/aggregators/:name', function (request, response) {
     }
 
     response.json(ok_ko);
-}).pathParam('name', joi.string().allow('').required()).body(joi_aggregator_optionals).response(200, joi_ok_ko).response(404, joi_ok_ko).response(500, joi_ok_ko);
+}).pathParam('name', joi.string().allow('').required()).body(
+    joi_aggregator.optionalKeys(
+        _.map(joi_aggregator._inner.children, function (e) {
+            return e.key;
+        })
+    )
+).response(200, joi_ok_ko).response(404, joi_ok_ko).response(500, joi_ok_ko);
 
 router.delete('/aggregators/:name', function (request, response) {
     const ok_ko = {
