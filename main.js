@@ -4,6 +4,26 @@
 
 const _ = require('lodash'),
     joi = require('joi'),
+    joi_notification = joi.object({
+        notifications: joi.array().items(
+            joi.object({
+                class: joi.alternatives([
+                    joi.string().allow('').allow(null),
+                    joi.number()
+                ]),
+                id: joi.alternatives([
+                    joi.string().allow('').allow(null),
+                    joi.number()
+                ]),
+                errors: joi.array().items(
+                    joi.string().allow('')
+                ).required()
+            }).required()
+        ).required(),
+        errors: joi.array().items(
+            joi.string().allow('')
+        ).required()
+    }).required(),
     joi_aggregator = joi.object({
         name: joi.string().allow('').required(),
         from_class: joi.string().allow('').required(),
@@ -30,10 +50,10 @@ const _ = require('lodash'),
     relationsCollection = arango.db._collection('relations'),
     aggregatorsCollection = arango.db._collection('aggregators');
 
-router.post('/fill', function (req, res) {
+router.post('/fill', function (request, response) {
     var fromEventDocuments = [], notifications = {}, errors = [], aggregators = {};
 
-    for (const serializedEvent of req.body) {
+    for (const serializedEvent of request.body) {
         try {
             const event = JSON.parse(serializedEvent);
 
@@ -68,7 +88,7 @@ router.post('/fill', function (req, res) {
         }
     }
 
-    if (fromEventDocuments.length) res.status(201);
+    if (fromEventDocuments.length) response.status(201);
 
     for (const fromEventDocument of _.sortBy(fromEventDocuments, 'time')) {
         try {
@@ -108,81 +128,58 @@ FOR eventDocument IN @@eventsCollection
         }
     }
 
-    res.json({
+    response.json({
         notifications: _.values(notifications),
         errors: errors
     });
 }).body(
     joi.array(
         joi.string().allow('')
-    ).required(),
-    'List of serialized Navel::Event'
-).response(
-    joi.object({
-        notifications: joi.array().items(
-            joi.object({
-                class: joi.alternatives([
-                    joi.string().allow('').allow(null),
-                    joi.number()
-                ]),
-                id: joi.alternatives([
-                    joi.string().allow('').allow(null),
-                    joi.number()
-                ]),
-                errors: joi.array().items(
-                    joi.string().allow('')
-                ).required()
-            }).required()
-        ).required(),
-        errors: joi.array().items(
-            joi.string().allow('')
-        ).required()
-    }).required(),
-    'List of Navel::Notification constructor properties'
-);
+    ).required()
+).response(200, joi_notification).response(201, joi_notification);
 
-router.get('/aggregators', function (req, res) {
+router.get('/aggregators', function (request, response) {
     try {
-        res.json(arango.db._query('FOR aggregator IN @@aggregatorsCollection RETURN aggregator.name', {
+        response.json(arango.db._query('FOR aggregator IN @@aggregatorsCollection RETURN aggregator.name', {
             '@aggregatorsCollection': aggregatorsCollection.name()
         }).toArray());
     } catch (e) {
-        res.status(500).json({
+        response.status(500).json({
             ok: [],
             ko: [
                 e.toString()
             ]
         });
     }
-}).response(joi.alternatives([
+}).response(
+    200,
     joi.array().items(
         joi.string().allow('')
-    ).required(),
-    joi_ok_ko
-]));
+    ).required()
+).response(500, joi_ok_ko);
 
-router.post('/aggregators', function (req, res) {
+router.post('/aggregators', function (request, response) {
     const ok_ko = {
         ok: [],
         ko: []
     };
 
     try {
-        aggregatorsCollection.insert(req.body);
+        aggregatorsCollection.insert(request.body);
 
-        ok_ko.ok.push(req.body.name + ': successfuly added');
+        ok_ko.ok.push(request.body.name + ': successfuly added.');
 
-        res.status(201);
+        response.status(201);
     } catch (e) {
-        ok_ko.ko.push(req.body.name + ': cannot be added: ' + e.toString());
+        ok_ko.ko.push(request.body.name + ': cannot be added: ' + e.toString());
 
-        res.status(e instanceof arango.ArangoError && e.errorNum == arango.ERROR_ARANGO_UNIQUE_CONSTRAINT_VIOLATED ? 409 : 500);
+        response.status(e instanceof arango.ArangoError && e.errorNum == arango.ERROR_ARANGO_UNIQUE_CONSTRAINT_VIOLATED ? 409 : 500);
     }
 
-    res.json(ok_ko);
-}).body(joi_aggregator).response(joi_ok_ko);
+    response.json(ok_ko);
+}).body(joi_aggregator).response(201, joi_ok_ko).response(409, joi_ok_ko).response(500, joi_ok_ko);
 
-router.get('/aggregators/:name', function (req, res) {
+router.get('/aggregators/:name', function (request, response) {
     const ok_ko = {
         ok: [],
         ko: []
@@ -190,30 +187,30 @@ router.get('/aggregators/:name', function (req, res) {
 
     try {
         const aggregator = aggregatorsCollection.byExample({
-            name: req.pathParams.name
+            name: request.pathParams.name
         }).toArray();
 
         if (aggregator.length == 1) {
-            return res.json(
+            return response.json(
                 _.omitBy(aggregator[0], function (v, k) {
                     return k.match(/^_/);
                 })
             );
         } else {
-            res.status(404);
+            response.status(404);
 
-            ok_ko.ko.push(req.pathParams.name + ': not found');
+            ok_ko.ko.push(request.pathParams.name + ': not found.');
         }
     } catch (e) {
-        res.status(500);
+        response.status(500);
 
         ok_ko.ko.push(e.toString());
     }
 
-    res.json(ok_ko);
-}).pathParam('name', joi.string().allow('').required()).response(joi_ok_ko);
+    response.json(ok_ko);
+}).pathParam('name', joi.string().allow('').required()).response(200, joi_aggregator).response(404, joi_ok_ko).response(500, joi_ok_ko);
 
-router.put('/aggregators/:name', function (req, res) {
+router.put('/aggregators/:name', function (request, response) {
     const ok_ko = {
         ok: [],
         ko: []
@@ -222,54 +219,52 @@ router.put('/aggregators/:name', function (req, res) {
     try {
         if (aggregatorsCollection.updateByExample(
             {
-                name: req.pathParams.name
+                name: request.pathParams.name
             },
-            _.omit(req.body, 'name'),
+            _.omit(request.body, 'name'),
             {
                 mergeObject: true
             }
         ) == 1) {
-            ok_ko.ko.push(req.pathParams.name + ': successfuly modified');
+            ok_ko.ko.push(request.pathParams.name + ': successfuly modified.');
         } else {
-            ok_ko.ko.push(req.pathParams.name + ': not found');
+            ok_ko.ko.push(request.pathParams.name + ': not found.');
 
-            res.status(404);
+            response.status(404);
         }
     } catch (e) {
-        ok_ko.ko.push(req.pathParams.name + ': cannot be modified: ' + e.toString());
+        ok_ko.ko.push(request.pathParams.name + ': cannot be modified: ' + e.toString());
 
-        res.status(500);
+        response.status(500);
     }
 
-    res.json(ok_ko);
-}).pathParam('name', joi.string().allow('').required()).body(joi_aggregator_optionals).response(joi_ok_ko);
+    response.json(ok_ko);
+}).pathParam('name', joi.string().allow('').required()).body(joi_aggregator_optionals).response(200, joi_ok_ko).response(404, joi_ok_ko).response(500, joi_ok_ko);
 
-router.delete('/aggregators/:name', function (req, res) {
+router.delete('/aggregators/:name', function (request, response) {
     const ok_ko = {
         ok: [],
         ko: []
     };
 
-    var status = 200;
-
     try {
         if (aggregatorsCollection.removeByExample({
-            name: req.pathParams.name
+            name: request.pathParams.name
         }) == 1) {
-            ok_ko.ok.push(req.pathParams.name + ': successfuly removed');
+            ok_ko.ok.push(request.pathParams.name + ': successfuly removed.');
         } else {
-            ok_ko.ko.push(req.pathParams.name + ': not found');
+            ok_ko.ko.push(request.pathParams.name + ': not found.');
 
-            res.status(404);
+            response.status(404);
         }
     } catch (e) {
-        ok_ko.ko.push(req.pathParams.name + ': cannot be removed: ' + e.toString());
+        ok_ko.ko.push(request.pathParams.name + ': cannot be removed: ' + e.toString());
 
-        res.status(500);
+        response.status(500);
     }
 
-    res.json(ok_ko);
-}).pathParam('name', joi.string().allow('').required()).response(joi_ok_ko);
+    response.json(ok_ko);
+}).pathParam('name', joi.string().allow('').required()).response(200, joi_ok_ko).response(404, joi_ok_ko).response(500, joi_ok_ko);
 
 module.context.use(router);
 
