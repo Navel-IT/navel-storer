@@ -1,26 +1,28 @@
-/*
-    Copyright (C) 2015-2017 Yoann Le Garff, Nicolas Boquet and Yann Le Bras
-    navel-storer is licensed under the Apache License, Version 2.0
-*/
-
 // BEGIN
 
 'use strict;'
 
-const db = require('@arangodb').db, graphModule = require('@arangodb/general-graph'),
-    graphs = ['main'], documentCollections = ['aggregator'], edgeCollections = ['aggregation'];
+const db = require('@arangodb').db,
+    eventsCollectionName = 'events',
+    relationsCollectionName = 'relations',
+    aggregatorsCollectionName = 'aggregators';
 
+if ( ! db._collection(eventsCollectionName)) db._createDocumentCollection(eventsCollectionName);
+if ( ! db._collection(relationsCollectionName)) db._createEdgeCollection(relationsCollectionName);
+if ( ! db._collection(aggregatorsCollectionName)) db._createDocumentCollection(aggregatorsCollectionName);
 
-for (graphName of graphs) {
-    if ( ! graphModule._exists(graphName)) graphModule._create(graphName);
-}
+db[eventsCollectionName].ensureSkiplist('time');
+db[eventsCollectionName].ensureSkiplist('class');
+db[eventsCollectionName].ensureSkiplist('id');
+db[eventsCollectionName].ensureFulltextIndex('description');
 
-for (collectionName of documentCollections) {
-    if ( ! db._collection(collectionName)) db._createDocumentCollection(collectionName);
-}
+db[relationsCollectionName].ensureSkiplist('from_path');
+db[relationsCollectionName].ensureSkiplist('to_path');
 
-for (collectionName of edgeCollections) {
-    if ( ! db._collection(collectionName)) db._createEdgeCollection(collectionName);
-}
+db[aggregatorsCollectionName].ensureUniqueSkiplist('name');
+db[aggregatorsCollectionName].ensureSkiplist('from_class');
+db[aggregatorsCollectionName].ensureSkiplist('to_class');
+db[aggregatorsCollectionName].ensureSkiplist('from_path');
+db[aggregatorsCollectionName].ensureSkiplist('to_path');
 
 // END
