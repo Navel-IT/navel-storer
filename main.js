@@ -45,7 +45,7 @@ const _ = require('lodash'),
     relationsCollection = arango.db._collection('relations'),
     aggregatorsCollection = arango.db._collection('aggregators');
 
-router.post('/fill', function (request, response) {
+router.post('/fill', (request, response) => {
     var fromEventDocuments = [], notifications = {}, errors = [], aggregators = {};
 
     for (const serializedEvent of request.body) {
@@ -133,7 +133,7 @@ FOR eventDocument IN @@eventsCollection
     ).required()
 ).response(200, joi_notification).response(201, joi_notification);
 
-router.get('/aggregators', function (request, response) {
+router.get('/aggregators', (request, response) => {
     try {
         response.json(arango.db._query('FOR aggregator IN @@aggregatorsCollection RETURN aggregator.name', {
             '@aggregatorsCollection': aggregatorsCollection.name()
@@ -153,7 +153,7 @@ router.get('/aggregators', function (request, response) {
     ).required()
 ).response(500, joi_ok_ko);
 
-router.post('/aggregators', function (request, response) {
+router.post('/aggregators', (request, response) => {
     const ok_ko = {
         ok: [],
         ko: []
@@ -174,7 +174,7 @@ router.post('/aggregators', function (request, response) {
     response.json(ok_ko);
 }).body(joi_aggregator).response(201, joi_ok_ko).response(409, joi_ok_ko).response(500, joi_ok_ko);
 
-router.get('/aggregators/:name', function (request, response) {
+router.get('/aggregators/:name', (request, response) => {
     const ok_ko = {
         ok: [],
         ko: []
@@ -187,9 +187,7 @@ router.get('/aggregators/:name', function (request, response) {
 
         if (aggregator.length == 1) {
             return response.json(
-                _.omitBy(aggregator[0], function (v, k) {
-                    return k.match(/^_/);
-                })
+                _.omitBy(aggregator[0], (v, k) => k.match(/^_/))
             );
         } else {
             response.status(404);
@@ -205,7 +203,7 @@ router.get('/aggregators/:name', function (request, response) {
     response.json(ok_ko);
 }).pathParam('name', joi.string().allow('').required()).response(200, joi_aggregator).response(404, joi_ok_ko).response(500, joi_ok_ko);
 
-router.put('/aggregators/:name', function (request, response) {
+router.put('/aggregators/:name', (request, response) => {
     const ok_ko = {
         ok: [],
         ko: []
@@ -236,13 +234,11 @@ router.put('/aggregators/:name', function (request, response) {
     response.json(ok_ko);
 }).pathParam('name', joi.string().allow('').required()).body(
     joi_aggregator.optionalKeys(
-        _.map(joi_aggregator._inner.children, function (e) {
-            return e.key;
-        })
+        _.map(joi_aggregator._inner.children, e => e.key)
     )
 ).response(200, joi_ok_ko).response(404, joi_ok_ko).response(500, joi_ok_ko);
 
-router.delete('/aggregators/:name', function (request, response) {
+router.delete('/aggregators/:name', (request, response) => {
     const ok_ko = {
         ok: [],
         ko: []
