@@ -19,7 +19,7 @@
         "teardown": "scripts/teardown.js"
     },
     "thumbnail": "assets/images/logo.png",
-    "tests": "t/**/*.js",
+    "tests": "tests/**/*.js",
     "main": "main.js",
     "lib": "."
 }
