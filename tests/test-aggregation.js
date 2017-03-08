@@ -1,3 +1,8 @@
+/*
+    Copyright (C) 2015-2017 Yoann Le Garff, Nicolas Boquet and Yann Le Bras
+    navel-storer is licensed under the Apache License, Version 2.0
+*/
+
 // BEGIN
 
 'use strict';
@@ -14,5 +19,7 @@ const _ = require('lodash'),
     };
 
 chai.use(chaiHttp);
+
+// TODO
 
 // END
