@@ -1,20 +1,41 @@
+/*
+    Copyright (C) 2015-2017 Yoann Le Garff, Nicolas Boquet and Yann Le Bras
+    navel-storer is licensed under the Apache License, Version 2.0
+*/
+
 // BEGIN
 
 'use strict;'
 
 const _ = require('lodash'),
     joi = require('joi'),
-    joi_notification = joi.object({
+    joiRawEvent = joi.array().items(
+        joi.number().integer().required(),
+        joi.alternatives([
+            joi.string().allow('').allow(null),
+            joi.number().integer()
+        ]).required(),
+        joi.alternatives([
+            joi.string().allow(''),
+            joi.number().integer()
+        ]).required(),
+        joi.alternatives([
+            joi.string().allow('').allow(null),
+            joi.number().integer()
+        ]).required(),
+        joi.any()
+    ).required(),
+    joiNotification = joi.object({
         notifications: joi.array().items(
             joi.object({
                 class: joi.alternatives([
                     joi.string().allow('').allow(null),
                     joi.number()
-                ]),
+                ]).required(),
                 id: joi.alternatives([
                     joi.string().allow('').allow(null),
                     joi.number()
-                ]),
+                ]).required(),
                 errors: joi.array().items(
                     joi.string().allow('')
                 ).required()
@@ -24,14 +45,14 @@ const _ = require('lodash'),
             joi.string().allow('')
         ).required()
     }).required(),
-    joi_aggregator = joi.object({
+    joiAggregator = joi.object({
         name: joi.string().allow('').required(),
         from_class: joi.string().allow('').required(),
         to_class: joi.string().allow('').required(),
         from_path: joi.string().allow('').required(),
         to_path: joi.string().allow('').required()
     }).required(),
-    joi_ok_ko = joi.object({
+    joiOkKo = joi.object({
         ok: joi.array(
             joi.string().allow('')
         ).required(),
@@ -52,14 +73,7 @@ router.post('/fill', (request, response) => {
         try {
             const event = JSON.parse(serializedEvent);
 
-            if ( ! (
-                event instanceof Array &&
-                event.length == 5 &&
-                _.isInteger(event[0]) &&
-                (_.isNull(event[1]) || _.isString(event[1]) || _.isInteger(event[1])) &&
-                (_.isString(event[2]) || _.isInteger(event[2])) &&
-                (_.isNull(event[3]) || _.isString(event[3]) || _.isInteger(event[3]))
-            )) throw new Error('invalid event');
+            if ( ! joiRawEvent.validate(event)) throw new Error('invalid event');
 
             const fromEventDocument = eventsCollection.insert({
                 time: event[0],
@@ -131,7 +145,7 @@ FOR eventDocument IN @@eventsCollection
     joi.array(
         joi.string().allow('')
     ).required()
-).response(200, joi_notification).response(201, joi_notification);
+).response(200, joiNotification).response(201, joiNotification);
 
 router.get('/aggregators', (request, response) => {
     try {
@@ -151,10 +165,10 @@ router.get('/aggregators', (request, response) => {
     joi.array().items(
         joi.string().allow('')
     ).required()
-).response(500, joi_ok_ko);
+).response(500, joiOkKo);
 
 router.post('/aggregators', (request, response) => {
-    const ok_ko = {
+    const okKo = {
         ok: [],
         ko: []
     };
@@ -162,20 +176,20 @@ router.post('/aggregators', (request, response) => {
     try {
         aggregatorsCollection.insert(request.body);
 
-        ok_ko.ok.push(request.body.name + ': successfuly added.');
+        okKo.ok.push(request.body.name + ': successfuly added.');
 
         response.status(201);
     } catch (e) {
-        ok_ko.ko.push(request.body.name + ': cannot be added: ' + e.toString());
+        okKo.ko.push(request.body.name + ': cannot be added: ' + e.toString());
 
         response.status(e instanceof arango.ArangoError && e.errorNum == arango.ERROR_ARANGO_UNIQUE_CONSTRAINT_VIOLATED ? 409 : 500);
     }
 
-    response.json(ok_ko);
-}).body(joi_aggregator).response(201, joi_ok_ko).response(409, joi_ok_ko).response(500, joi_ok_ko);
+    response.json(okKo);
+}).body(joiAggregator).response(201, joiOkKo).response(409, joiOkKo).response(500, joiOkKo);
 
 router.get('/aggregators/:name', (request, response) => {
-    const ok_ko = {
+    const okKo = {
         ok: [],
         ko: []
     };
@@ -192,19 +206,19 @@ router.get('/aggregators/:name', (request, response) => {
         } else {
             response.status(404);
 
-            ok_ko.ko.push(request.pathParams.name + ': not found.');
+            okKo.ko.push(request.pathParams.name + ': not found.');
         }
     } catch (e) {
         response.status(500);
 
-        ok_ko.ko.push(e.toString());
+        okKo.ko.push(e.toString());
     }
 
-    response.json(ok_ko);
-}).pathParam('name', joi.string().allow('').required()).response(200, joi_aggregator).response(404, joi_ok_ko).response(500, joi_ok_ko);
+    response.json(okKo);
+}).pathParam('name', joi.string().allow('').required()).response(200, joiAggregator).response(404, joiOkKo).response(500, joiOkKo);
 
 router.put('/aggregators/:name', (request, response) => {
-    const ok_ko = {
+    const okKo = {
         ok: [],
         ko: []
     };
@@ -219,27 +233,27 @@ router.put('/aggregators/:name', (request, response) => {
                 mergeObject: true
             }
         ) == 1) {
-            ok_ko.ko.push(request.pathParams.name + ': successfuly modified.');
+            okKo.ko.push(request.pathParams.name + ': successfuly modified.');
         } else {
-            ok_ko.ko.push(request.pathParams.name + ': not found.');
+            okKo.ko.push(request.pathParams.name + ': not found.');
 
             response.status(404);
         }
     } catch (e) {
-        ok_ko.ko.push(request.pathParams.name + ': cannot be modified: ' + e.toString());
+        okKo.ko.push(request.pathParams.name + ': cannot be modified: ' + e.toString());
 
         response.status(500);
     }
 
-    response.json(ok_ko);
+    response.json(okKo);
 }).pathParam('name', joi.string().allow('').required()).body(
-    joi_aggregator.optionalKeys(
-        _.map(joi_aggregator._inner.children, e => e.key)
+    joiAggregator.optionalKeys(
+        _.map(joiAggregator._inner.children, e => e.key)
     )
-).response(200, joi_ok_ko).response(404, joi_ok_ko).response(500, joi_ok_ko);
+).response(200, joiOkKo).response(404, joiOkKo).response(500, joiOkKo);
 
 router.delete('/aggregators/:name', (request, response) => {
-    const ok_ko = {
+    const okKo = {
         ok: [],
         ko: []
     };
@@ -248,20 +262,20 @@ router.delete('/aggregators/:name', (request, response) => {
         if (aggregatorsCollection.removeByExample({
             name: request.pathParams.name
         }) == 1) {
-            ok_ko.ok.push(request.pathParams.name + ': successfuly removed.');
+            okKo.ok.push(request.pathParams.name + ': successfuly removed.');
         } else {
-            ok_ko.ko.push(request.pathParams.name + ': not found.');
+            okKo.ko.push(request.pathParams.name + ': not found.');
 
             response.status(404);
         }
     } catch (e) {
-        ok_ko.ko.push(request.pathParams.name + ': cannot be removed: ' + e.toString());
+        okKo.ko.push(request.pathParams.name + ': cannot be removed: ' + e.toString());
 
         response.status(500);
     }
 
-    response.json(ok_ko);
-}).pathParam('name', joi.string().allow('').required()).response(200, joi_ok_ko).response(404, joi_ok_ko).response(500, joi_ok_ko);
+    response.json(okKo);
+}).pathParam('name', joi.string().allow('').required()).response(200, joiOkKo).response(404, joiOkKo).response(500, joiOkKo);
 
 module.context.use(router);
 
