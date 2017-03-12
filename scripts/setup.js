@@ -8,9 +8,9 @@
 'use strict;'
 
 const db = require('@arangodb').db,
-    eventsCollectionName = 'events',
-    relationsCollectionName = 'relations',
-    aggregatorsCollectionName = 'aggregators';
+    eventsCollectionName = module.context.collectionName('events'),
+    relationsCollectionName = module.context.collectionName('relations'),
+    aggregatorsCollectionName = module.context.collectionName('aggregators');
 
 if ( ! db._collection(eventsCollectionName)) db._createDocumentCollection(eventsCollectionName);
 if ( ! db._collection(relationsCollectionName)) db._createEdgeCollection(relationsCollectionName);

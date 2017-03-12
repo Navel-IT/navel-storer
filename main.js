@@ -62,12 +62,14 @@ const _ = require('lodash'),
     }).required(),
     arango = require('@arangodb'),
     router = require('@arangodb/foxx/router')(),
-    eventsCollection = arango.db._collection('events'),
-    relationsCollection = arango.db._collection('relations'),
-    aggregatorsCollection = arango.db._collection('aggregators');
+    eventsCollection = module.context.collection('events'),
+    relationsCollection = module.context.collection('relations'),
+    aggregatorsCollection = module.context.collection('aggregators');
+
+router.use('/docs', module.context.createDocumentationRouter());
 
 router.post('/fill', (request, response) => {
-    var fromEventDocuments = [], notifications = {}, errors = [], aggregators = {};
+    const fromEventDocuments = [], notifications = {}, errors = [], aggregators = {};
 
     for (const serializedEvent of request.body) {
         try {
