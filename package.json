@@ -1,6 +1,0 @@
-{
-    "private": true,
-    "devDependencies": {
-        "chai-http": "^3.0.0"
-    }
-}
