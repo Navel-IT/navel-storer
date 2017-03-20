@@ -7,27 +7,31 @@
 
 'use strict;'
 
-const db = require('@arangodb').db,
-    eventsCollectionName = module.context.collectionName('events'),
-    relationsCollectionName = module.context.collectionName('relations'),
-    aggregatorsCollectionName = module.context.collectionName('aggregators');
+const
+    db = require('@arangodb').db,
+    oCollectionName = module.context.collectionName('o'),
+    dCollectionName = module.context.collectionName('d'),
+    ooCollectionName = module.context.collectionName('oo'),
+    odCollectionName = module.context.collectionName('od')
+    aCollectionName = module.context.collectionName('a');
 
-if ( ! db._collection(eventsCollectionName)) db._createDocumentCollection(eventsCollectionName);
-if ( ! db._collection(relationsCollectionName)) db._createEdgeCollection(relationsCollectionName);
-if ( ! db._collection(aggregatorsCollectionName)) db._createDocumentCollection(aggregatorsCollectionName);
+if ( ! db._collection(oCollectionName)) db._createDocumentCollection(oCollectionName);
+if ( ! db._collection(dCollectionName)) db._createDocumentCollection(dCollectionName);
+if ( ! db._collection(ooCollectionName)) db._createEdgeCollection(ooCollectionName);
+if ( ! db._collection(odCollectionName)) db._createEdgeCollection(odCollectionName);
+if ( ! db._collection(aCollectionName)) db._createDocumentCollection(aCollectionName);
 
-db[eventsCollectionName].ensureSkiplist('time');
-db[eventsCollectionName].ensureSkiplist('class');
-db[eventsCollectionName].ensureSkiplist('id');
-db[eventsCollectionName].ensureFulltextIndex('description');
+db[oCollectionName].ensureSkiplist('class');
+db[oCollectionName].ensureUniqueSkiplist('id');
+db[oCollectionName].ensureFulltextIndex('description');
 
-db[relationsCollectionName].ensureSkiplist('from_path');
-db[relationsCollectionName].ensureSkiplist('to_path');
+db[odCollectionName].ensureSkiplist('from_path');
+db[odCollectionName].ensureSkiplist('to_path');
 
-db[aggregatorsCollectionName].ensureUniqueSkiplist('name');
-db[aggregatorsCollectionName].ensureSkiplist('from_class');
-db[aggregatorsCollectionName].ensureSkiplist('to_class');
-db[aggregatorsCollectionName].ensureSkiplist('from_path');
-db[aggregatorsCollectionName].ensureSkiplist('to_path');
+db[aCollectionName].ensureUniqueSkiplist('name');
+db[aCollectionName].ensureSkiplist('from_class');
+db[aCollectionName].ensureSkiplist('to_class');
+db[aCollectionName].ensureSkiplist('from_path');
+db[aCollectionName].ensureSkiplist('to_path');
 
 // END

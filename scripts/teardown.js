@@ -7,13 +7,14 @@
 
 'use strict;'
 
-const db = require('@arangodb').db,
-    eventsCollection = module.context.collection('events'),
-    relationsCollection = module.context.collection('relations'),
-    aggregatorsCollection = module.context.collection('aggregators');
-
-if (eventsCollection) eventsCollection.drop();
-if (relationsCollection) relationsCollection.drop();
-if (aggregatorsCollection) aggregatorsCollection.drop();
+for (const collection of [
+    module.context.collection('o'),
+    module.context.collection('d'),
+    module.context.collection('oo'),
+    module.context.collection('od'),
+    module.context.collection('a')
+]) {
+    if (collection) collection.drop();
+}
 
 // END
