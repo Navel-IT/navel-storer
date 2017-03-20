@@ -75,7 +75,7 @@ router.post('/fill', (request, response) => {
     const
         notifications = {},
         errors = [],
-        oDocuments = [];
+        eventsByoDocumentId = {};
 
     for (const serializedRawEvent of request.body) {
         try {
@@ -89,7 +89,7 @@ router.post('/fill', (request, response) => {
                 description: joiRawEventValidation.value[3]
             };
 
-            const oDocument = arango.db._query(`
+            const event = arango.db._query(`
 LET oDocument = (
     UPSERT {
         id: @object.id
@@ -98,17 +98,22 @@ LET oDocument = (
     RETURN NEW
 )[0]
 
+LET dDocument = (
+    INSERT @data INTO @@dCollectionName
+
+    RETURN NEW._id
+)[0]
+
 INSERT {
     _from: oDocument._id,
-    _to: (
-        INSERT @data INTO @@dCollectionName
-
-        RETURN NEW._id
-    )[0],
+    _to: dDocument._id,
     time: @time
 } INTO @@odCollectionName
 
-RETURN oDocument
+RETURN {
+    oDocument: oDocument,
+    dDocument: dDocument
+}
 `,
             {
                 '@oCollectionName': oCollection.name(),
@@ -119,9 +124,11 @@ RETURN oDocument
                 time: joiRawEventValidation.value[0],
             }).toArray()[0];
 
-            oDocuments.push(oDocument);
+            if ( ! eventsByoDocumentId[event.oDocument._id]) eventsByoDocumentId[event.oDocument._id] = [];
 
-            notifications[oDocument._id] = {
+            eventsByoDocumentId[event.oDocument._id].push(event);
+
+            if ( ! notifications[event.oDocument._id]) notifications[event.oDocument._id] = {
                 class: object.class,
                 id: object.id,
                 errors: []
@@ -131,50 +138,47 @@ RETURN oDocument
         }
     }
 
-    if (oDocuments.length) {
+    oDucumentIds = _.keys(eventsByoDocumentId);
+
+    if (oDucumentIds.length) {
         response.status(201);
 
         for (const aggregator of aCollection.all().toArray()) {
-            for (const oDocument of oDocuments) {
-                if (oDocument.class == aggregator.from_class) {
-                    try {
-                        arango.db._query(`
-LET fromData = (
-    FOR v, e IN OUTBOUND @oDucumentId
-        @@odCollectionName
-        LIMIT 1
-        SORT e.time DESC
-        RETURN v
-)[0]
-
+            for (const oDocumentId of oDucumentIds) {
+                try {
+                    arango.db._query(`
 LET ooDocumentCreationTime = ROUND(DATE_NOW() / 1000)
 
-FOR object IN @@oCollectionName
-    FOR v, e IN OUTBOUND object._id @@odCollectionName
-        COLLECT AGGREGATE time = MAX(e.time)
+FOR event IN @eventsForAoDocument
+    FILTER event.oDocument.class == @fromClass
+    FOR object IN @@oCollectionName
+        FILTER object.class == @toClass
         FOR v, e IN OUTBOUND object._id @@odCollectionName
-            FILTER e.time == time AND fromData.@fromPathToArray == v.@toPathToArray
-            INSERT {
-                _from: @oDucumentId,
-                _to: object._id,
-                creation_time: ooDocumentCreationTime,
-                from_path: @fromPath,
-                to_path: @toPath
-            } IN @@ooCollectionName
+            COLLECT AGGREGATE time = MAX(e.time)
+            FOR v, e IN OUTBOUND object._id @@odCollectionName
+                FILTER e.time == time AND event.dDocument.@fromPathToArray == v.@toPathToArray
+                INSERT {
+                    _from: event.oDocument._id,
+                    _to: object._id,
+                    creation_time: ooDocumentCreationTime,
+                    from_path: @fromPath,
+                    to_path: @toPath
+                } IN @@ooCollectionName
 `,
-                        {
-                            '@odCollectionName': odCollection.name(),
-                            '@oCollectionName': oCollection.name(),
-                            '@ooCollectionName': ooCollection.name(),
-                            'oDucumentId': oDocument._id,
-                            'fromPath': aggregator.from_path,
-                            'toPath': aggregator.to_path,
-                            'fromPathToArray': _.toPath(aggregator.from_path),
-                            'toPathToArray': _.toPath(aggregator.to_path)
-                        });
-                    } catch (e) {
-                        notifications[oDocument._id].errors.push(e.toString());
-                    }
+                    {
+                        '@odCollectionName': odCollection.name(),
+                        '@oCollectionName': oCollection.name(),
+                        '@ooCollectionName': ooCollection.name(),
+                        'eventsForAoDocument': events[oDocumentId],
+                        'fromClass': aggregator.from_class,
+                        'toClass': aggregator.to_class,
+                        'fromPath': aggregator.from_path,
+                        'toPath': aggregator.to_path,
+                        'fromPathToArray': _.toPath(aggregator.from_path),
+                        'toPathToArray': _.toPath(aggregator.to_path)
+                    });
+                } catch (e) {
+                    notifications[oDocumentId].errors.push(e.toString());
                 }
             }
         }
