@@ -160,6 +160,7 @@ FOR object IN @@oCollectionName
     INSERT {
         _from: @oDucumentId,
         _to: object._id,
+        creation_time: DATE_NOW() / 1000,
         from_path: @fromPath,
         to_path: @toPath
     } IN @@ooCollectionName
