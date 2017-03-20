@@ -25,6 +25,7 @@ db[oCollectionName].ensureSkiplist('class');
 db[oCollectionName].ensureUniqueSkiplist('id');
 db[oCollectionName].ensureFulltextIndex('description');
 
+db[odCollectionName].ensureSkiplist('creation_time');
 db[odCollectionName].ensureSkiplist('from_path');
 db[odCollectionName].ensureSkiplist('to_path');
 
