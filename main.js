@@ -150,9 +150,9 @@ RETURN {
 LET ooDocumentCreationTime = ROUND(DATE_NOW() / 1000)
 
 FOR event IN @eventsForAoDocument
-    FILTER event.oDocument.class == @fromClass
+    FILTER event.oDocument.class == @aggregator.from_class
     FOR object IN @@oCollectionName
-        FILTER object.class == @toClass
+        FILTER object.class == @aggregator.to_class
         FOR v, e IN OUTBOUND object._id @@odCollectionName
             COLLECT AGGREGATE time = MAX(e.time)
             FOR v, e IN OUTBOUND object._id @@odCollectionName
@@ -161,8 +161,8 @@ FOR event IN @eventsForAoDocument
                     _from: event.oDocument._id,
                     _to: object._id,
                     creation_time: ooDocumentCreationTime,
-                    from_path: @fromPath,
-                    to_path: @toPath
+                    from_path: @aggregator.from_path,
+                    to_path: @aggregator.to_path
                 } IN @@ooCollectionName
 `,
                     {
@@ -170,10 +170,7 @@ FOR event IN @eventsForAoDocument
                         '@oCollectionName': oCollection.name(),
                         '@ooCollectionName': ooCollection.name(),
                         'eventsForAoDocument': events[oDocumentId],
-                        'fromClass': aggregator.from_class,
-                        'toClass': aggregator.to_class,
-                        'fromPath': aggregator.from_path,
-                        'toPath': aggregator.to_path,
+                        'aggregator': aggregator,
                         'fromPathToArray': _.toPath(aggregator.from_path),
                         'toPathToArray': _.toPath(aggregator.to_path)
                     });
