@@ -147,23 +147,20 @@ LET fromData = (
         RETURN v
 )[0]
 
-FOR object IN @@oCollectionName
-    LET toData = (
-        FOR v, e IN OUTBOUND object._id
-            @@odCollectionName
-            LIMIT 1
-            SORT e.time DESC
-            RETURN v
-    )[0]
+LET ooDocumentCreationTime = ROUND(DATE_NOW() / 1000)
 
-    FILTER fromData.@fromPathToArray == toData.@toPathToArray
-    INSERT {
-        _from: @oDucumentId,
-        _to: object._id,
-        creation_time: DATE_NOW() / 1000,
-        from_path: @fromPath,
-        to_path: @toPath
-    } IN @@ooCollectionName
+FOR object IN @@oCollectionName
+    FOR v, e IN OUTBOUND object._id @@odCollectionName
+        COLLECT AGGREGATE time = MAX(e.time)
+        FOR v, e IN OUTBOUND object._id @@odCollectionName
+            FILTER e.time == time AND fromData.@fromPathToArray == v.@toPathToArray
+            INSERT {
+                _from: @oDucumentId,
+                _to: object._id,
+                creation_time: ooDocumentCreationTime,
+                from_path: @fromPath,
+                to_path: @toPath
+            } IN @@ooCollectionName
 `,
                         {
                             '@odCollectionName': odCollection.name(),
