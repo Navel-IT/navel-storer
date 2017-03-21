@@ -21,7 +21,7 @@ if ( ! db._collection(ooCollectionName)) db._createEdgeCollection(ooCollectionNa
 if ( ! db._collection(odCollectionName)) db._createEdgeCollection(odCollectionName);
 if ( ! db._collection(aCollectionName)) db._createDocumentCollection(aCollectionName);
 
-db[oCollectionName].ensureSkiplist('class');
+db[oCollectionName].ensure('class');
 db[oCollectionName].ensureUniqueSkiplist('id');
 db[oCollectionName].ensureFulltextIndex('description');
 
@@ -30,9 +30,6 @@ db[odCollectionName].ensureSkiplist('from_path');
 db[odCollectionName].ensureSkiplist('to_path');
 
 db[aCollectionName].ensureUniqueSkiplist('name');
-db[aCollectionName].ensureSkiplist('from_class');
-db[aCollectionName].ensureSkiplist('to_class');
-db[aCollectionName].ensureSkiplist('from_path');
-db[aCollectionName].ensureSkiplist('to_path');
+db[aCollectionName].ensureUniqueSkiplist('from_class', 'to_class', 'from_path', 'to_path');
 
 // END
