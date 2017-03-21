@@ -153,17 +153,21 @@ FOR event IN @eventsForAoDocument
     FILTER event.oDocument.class == @aggregator.from_class
     FOR object IN @@oCollectionName
         FILTER object.class == @aggregator.to_class
-        FOR v, e IN OUTBOUND object._id @@odCollectionName
-            COLLECT AGGREGATE time = MAX(e.time)
+
+        LET maxTime = MAX((
             FOR v, e IN OUTBOUND object._id @@odCollectionName
-                FILTER e.time == time AND event.dDocument.@fromPathToArray == v.@toPathToArray
-                INSERT {
-                    _from: event.oDocument._id,
-                    _to: object._id,
-                    creation_time: ooDocumentCreationTime,
-                    from_path: @aggregator.from_path,
-                    to_path: @aggregator.to_path
-                } IN @@ooCollectionName
+                RETURN e.time
+        ))
+
+        FOR v, e IN OUTBOUND object._id @@odCollectionName
+            FILTER e.time == maxTime AND event.dDocument.@fromPathToArray == v.@toPathToArray
+            INSERT {
+                _from: event.oDocument._id,
+                _to: object._id,
+                creation_time: ooDocumentCreationTime,
+                from_path: @aggregator.from_path,
+                to_path: @aggregator.to_path
+            } IN @@ooCollectionName
 `,
                     {
                         '@odCollectionName': odCollection.name(),
