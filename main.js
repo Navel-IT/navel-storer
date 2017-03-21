@@ -122,7 +122,7 @@ RETURN {
                 object: object,
                 data: joiRawEventValidation.value[4],
                 time: joiRawEventValidation.value[0]
-            }).toArray()[0];
+            }).next();
 
             if ( ! eventsByoDocumentId[event.oDocument._id]) eventsByoDocumentId[event.oDocument._id] = [];
 
