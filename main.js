@@ -101,7 +101,7 @@ LET oDocument = (
 LET dDocument = (
     INSERT @data INTO @@dCollectionName
 
-    RETURN NEW._id
+    RETURN NEW
 )[0]
 
 INSERT {
@@ -111,8 +111,8 @@ INSERT {
 } INTO @@odCollectionName
 
 RETURN {
-    oDocument: oDocument,
-    dDocument: dDocument
+    oDocument,
+    dDocument
 }
 `,
             {
@@ -121,7 +121,7 @@ RETURN {
                 '@odCollectionName': odCollection.name(),
                 object: object,
                 data: joiRawEventValidation.value[4],
-                time: joiRawEventValidation.value[0],
+                time: joiRawEventValidation.value[0]
             }).toArray()[0];
 
             if ( ! eventsByoDocumentId[event.oDocument._id]) eventsByoDocumentId[event.oDocument._id] = [];
@@ -173,7 +173,7 @@ FOR event IN @eventsForAoDocument
                         '@odCollectionName': odCollection.name(),
                         '@oCollectionName': oCollection.name(),
                         '@ooCollectionName': ooCollection.name(),
-                        'eventsForAoDocument': events[oDocumentId],
+                        'eventsForAoDocument': eventsByoDocumentId[oDocumentId],
                         'aggregator': aggregator,
                         'fromPathToArray': _.toPath(aggregator.from_path),
                         'toPathToArray': _.toPath(aggregator.to_path)
