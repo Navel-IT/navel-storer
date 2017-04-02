@@ -21,7 +21,7 @@ if ( ! db._collection(ooCollectionName)) db._createEdgeCollection(ooCollectionNa
 if ( ! db._collection(odCollectionName)) db._createEdgeCollection(odCollectionName);
 if ( ! db._collection(aCollectionName)) db._createDocumentCollection(aCollectionName);
 
-db[oCollectionName].ensure('class');
+db[oCollectionName].ensureSkiplist('class');
 db[oCollectionName].ensureUniqueSkiplist('id');
 db[oCollectionName].ensureFulltextIndex('description');
 
