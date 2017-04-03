@@ -92,6 +92,7 @@ router.post('/fill', (request, response) => {
             const event = arango.db._query(`
 LET oDocument = (
     UPSERT {
+        class: @object.class,
         id: @object.id
     } INSERT @object UPDATE @object INTO @@oCollectionName
 
