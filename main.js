@@ -1,3 +1,4 @@
+
 /*
     Copyright (C) 2015-2017 Yoann Le Garff, Nicolas Boquet and Yann Le Bras
     navel-storer is licensed under the Apache License, Version 2.0
@@ -69,9 +70,13 @@ const
     odCollection = module.context.collection('od'),
     aCollection = module.context.collection('a');
 
-router.use('/docs', module.context.createDocumentationRouter());
+router.use('/api/docs', module.context.createDocumentationRouter());
 
-router.post('/fill', (request, response) => {
+router.get('/api', (request, response) => {
+    response.redirect(request.baseUrl + request.context.mount + '/api/docs/swagger.json');
+});
+
+router.post('/api/fill', (request, response) => {
     const
         notifications = {},
         errors = [],
@@ -196,7 +201,7 @@ FOR event IN @eventsForAoDocument
     ).required()
 ).response(200, joiFillEndpointResponse).response(201, joiFillEndpointResponse);
 
-router.get('/aggregators', (request, response) => {
+router.get('/api/aggregators', (request, response) => {
     try {
         response.json(arango.db._query('FOR aggregator IN @@aCollectionName RETURN aggregator.name', {
             '@aCollectionName': aCollection.name()
@@ -216,7 +221,7 @@ router.get('/aggregators', (request, response) => {
     ).required()
 ).response(500, joiOkKo);
 
-router.post('/aggregators', (request, response) => {
+router.post('/api/aggregators', (request, response) => {
     const okKo = {
         ok: [],
         ko: []
@@ -237,7 +242,7 @@ router.post('/aggregators', (request, response) => {
     response.json(okKo);
 }).body(joiAggregator).response(201, joiOkKo).response(409, joiOkKo).response(500, joiOkKo);
 
-router.get('/aggregators/:name', (request, response) => {
+router.get('/api/aggregators/:name', (request, response) => {
     const okKo = {
         ok: [],
         ko: []
@@ -266,7 +271,7 @@ router.get('/aggregators/:name', (request, response) => {
     response.json(okKo);
 }).pathParam('name', joi.string().allow('').required()).response(200, joiAggregator).response(404, joiOkKo).response(500, joiOkKo);
 
-router.put('/aggregators/:name', (request, response) => {
+router.put('/api/aggregators/:name', (request, response) => {
     const okKo = {
         ok: [],
         ko: []
@@ -302,7 +307,7 @@ router.put('/aggregators/:name', (request, response) => {
     )
 ).response(200, joiOkKo).response(404, joiOkKo).response(500, joiOkKo);
 
-router.delete('/aggregators/:name', (request, response) => {
+router.delete('/api/aggregators/:name', (request, response) => {
     const okKo = {
         ok: [],
         ko: []
